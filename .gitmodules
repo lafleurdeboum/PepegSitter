@@ -68,4 +68,5 @@
 	shallow = true
 [submodule "sitters/tree-sitter-vim"]
 	path = sitters/tree-sitter-vim
-	url = https://github.com/neovim/tree-sitter-vim
+	url = https://github.com/neovim/tree-sitter-vim.git
+	shallow = true
