@@ -7,6 +7,27 @@ use std::{
     process::Command,
 };
 
+fn resolve_lang_src(base: &Path, prefix: Option<&str>, lang: String) -> (String, PathBuf) {
+    if let Some(prefix) = prefix {
+        let nested = base.join(format!("tree-sitter-{prefix}-{lang}"));
+        if nested.exists() {
+            return (format!("{prefix}_{lang}"), nested.join("src"));
+        }
+    }
+
+    let nested = base.join(format!("tree-sitter-{lang}"));
+    if nested.exists() {
+        return (lang, nested.join("src"));
+    }
+
+    let nested = base.join(&lang);
+    if nested.exists() {
+        return (lang, nested.join("src"));
+    }
+
+    (lang, base.join("src"))
+}
+
 #[derive(Debug)]
 struct Sitter {
     path: PathBuf,
@@ -20,21 +41,21 @@ impl Sitter {
         let sitter = match feature.split_once('-') {
             Some((dir, lang)) => {
                 let path = PathBuf::from(format!("sitters/tree-sitter-{dir}"));
-                let src = path.join(lang).join("src");
+                let (lang, src) = resolve_lang_src(&path, Some(dir), lang.to_owned());
 
                 Self {
-                    path,
                     src,
+                    path,
                     lang: lang.to_owned(),
                     version: OnceCell::new(),
                 }
             }
             None => {
-                let lang = feature;
-                let path = PathBuf::from(format!("sitters/tree-sitter-{lang}"));
+                let path = PathBuf::from(format!("sitters/tree-sitter-{feature}"));
+                let (lang, src) = resolve_lang_src(&path, None, feature);
 
                 Self {
-                    src: path.join("src"),
+                    src,
                     path,
                     lang,
                     version: OnceCell::new(),
