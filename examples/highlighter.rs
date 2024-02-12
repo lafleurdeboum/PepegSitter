@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-use tree_sitter_highlight::{Highlighter, HighlightConfiguration, HighlightEvent};
-use lazy_static::lazy_static;
 use html_escape::encode_text;
-use std::{
-    env::args,
-    fs::read_to_string,
-};
+use lazy_static::lazy_static;
+use std::collections::HashMap;
+use std::{env::args, fs::read_to_string};
+use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
 const HIGHLIGHT_NAMES: &[&str; 19] = &[
     "attribute",
@@ -90,7 +87,8 @@ fn main() {
     let file_name = arguments[1].clone();
     let text_content = read_to_string(&file_name).expect("readable file in text_file");
     let mut highlighted_text = highlight(&file_name, &text_content);
-    highlighted_text = format!(r#"
+    highlighted_text = format!(
+        r#"
 <!DOCTYPE html>
 <html>
     <head>
@@ -104,7 +102,8 @@ fn main() {
         </pre>
     </body>
 </html>
-    "#);
+    "#
+    );
     println!("{highlighted_text}");
 }
 
@@ -118,31 +117,33 @@ pub fn highlight(filename: &str, text: &str) -> String {
     match FILETYPES.get(extension) {
         Some(filetype) => {
             eprintln!(" > highlighting file {filename:?} with type {filetype:?}");
-            let highlights = highlighter.highlight(
-                CONFIGS.get(filetype).unwrap(),
-                text.as_bytes(),
-                None,
-                |injected| {
-                    eprintln!(" > highlighting injected content with type {injected:?}");
-                    
-                    CONFIGS.get(injected)
-                }
-            ).unwrap();
+            let highlights = highlighter
+                .highlight(
+                    CONFIGS.get(filetype).unwrap(),
+                    text.as_bytes(),
+                    None,
+                    |injected| {
+                        eprintln!(" > highlighting injected content with type {injected:?}");
+
+                        CONFIGS.get(injected)
+                    },
+                )
+                .unwrap();
 
             let mut highlighted_text = String::new();
             for event in highlights {
                 match event.unwrap() {
-                    HighlightEvent::Source {start, end} => {
-                        highlighted_text = format!(
-                            "{}{}",
-                            highlighted_text,
-                            encode_text(&text[start..end])
-                        );
-                    },
+                    HighlightEvent::Source { start, end } => {
+                        highlighted_text =
+                            format!("{}{}", highlighted_text, encode_text(&text[start..end]));
+                    }
                     HighlightEvent::HighlightStart(s) => {
-                        highlighted_text = format!("{}<span class=\"{}\">",
-                            highlighted_text, HIGHLIGHT_NAMES[s.0].replace(".", " "));
-                    },
+                        highlighted_text = format!(
+                            "{}<span class=\"{}\">",
+                            highlighted_text,
+                            HIGHLIGHT_NAMES[s.0].replace(".", " ")
+                        );
+                    }
                     HighlightEvent::HighlightEnd => {
                         highlighted_text = format!("{}</span>", highlighted_text);
                     }
@@ -150,12 +151,11 @@ pub fn highlight(filename: &str, text: &str) -> String {
             }
 
             highlighted_text
-        },
+        }
         None => {
             eprintln!(
                 " > highlighting: unrecognized extension '{}' with file '{}'.",
-                extension,
-                filename
+                extension, filename
             );
 
             encode_text(&text).to_string()
@@ -248,4 +248,3 @@ const STYLE: &str = r#"
         }
         </style>
 "#;
-
